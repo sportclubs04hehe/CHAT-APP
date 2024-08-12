@@ -1,8 +1,10 @@
 using API.Data;
 using API.Models;
 using API.Services;
+using API.Services.Impl;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
@@ -24,7 +26,8 @@ namespace API
                 o.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnections"));
             });
 
-            builder.Services.AddScoped<JWTServices>();
+            builder.Services.AddScoped<IJwtService,JWTService>();
+            builder.Services.AddScoped<IEmailService,EmailService>();
 
             // defining our IndentityCore Service
             builder.Services.AddIdentityCore<AppUser>(o =>
@@ -64,7 +67,33 @@ namespace API
                     };
                 });
 
+            builder.Services.AddCors();
+
+            // config error
+            builder.Services.Configure<ApiBehaviorOptions>(opt =>
+            {
+                opt.InvalidModelStateResponseFactory = activeContext =>
+                {
+                    var errors = activeContext.ModelState
+                    .Where(x => x.Value.Errors.Count > 0)
+                    .SelectMany(x => x.Value.Errors)
+                    .Select(x => x.ErrorMessage).ToArray();
+
+                    var toReturn = new
+                    {
+                        Errors = errors
+                    };
+
+                    return new BadRequestObjectResult(toReturn);
+                };
+            });
+
             var app = builder.Build();
+
+            app.UseCors(opt =>  
+            {
+                opt.AllowAnyHeader().AllowAnyMethod().AllowCredentials().WithOrigins(builder.Configuration["JWT:ClientUrl"]);
+            });
 
             app.UseHttpsRedirection();
 

@@ -4,13 +4,13 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
 
-namespace API.Services
+namespace API.Services.Impl
 {
-    public class JWTServices
+    public class JWTService : IJwtService
     {
         private readonly SymmetricSecurityKey _jwtKey;
         private readonly IConfiguration _config;
-        public JWTServices(IConfiguration config)
+        public JWTService(IConfiguration config)
         {
             _config = config;
             _jwtKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_config["JWT:Key"]));
