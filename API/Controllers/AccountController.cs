@@ -1,6 +1,7 @@
 ﻿using API.DTOs.Account;
 using API.Models;
 using API.Services;
+using API.Services.Impl;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -177,6 +178,91 @@ namespace API.Controllers
             }
         }
 
+        [HttpPost("forgot-username-or-password/{email}")]
+        public async Task<IActionResult> ForgotUsernameOrPassword(string email)
+        {
+            if (string.IsNullOrEmpty(email))
+            {
+                return BadRequest(new { message = "Email không hợp lệ." });
+            }
+
+            var user = await userManager.FindByEmailAsync(email);
+            if (user == null)
+            {
+                return BadRequest(new { message = "Địa chỉ email này chưa được đăng ký." });
+            }
+
+            if (!user.EmailConfirmed)
+            {
+                return BadRequest(new { message = "Vui lòng xác nhận email của bạn trước." });
+            }
+
+            try
+            {
+                // Attempt to send the forgot username or password email
+                var emailSent = await SendForgotUsernameOrPasswordEmail(user);
+                if (emailSent)
+                {
+                    return Ok(new { title = "Tên người dùng và mật khẩu đã được gửi", message = "Hãy kiểm tra email của bạn." });
+                }
+                else
+                {
+                    // If email sending fails without an exception
+                    return StatusCode(500, new { message = "Gửi email thất bại. Hãy liên hệ với quản trị viên." });
+                }
+            }
+            catch (Exception ex)
+            {
+                // Log the exception if needed
+                return StatusCode(500, new { message = "Đã xảy ra lỗi trong quá trình gửi email. Hãy liên hệ với quản trị viên.", error = ex.Message });
+            }
+        }
+
+        [HttpPut("reset-password")]
+        public async Task<IActionResult> ResetPassword(ResetPasswordDto model)
+        {
+            if (model == null || string.IsNullOrEmpty(model.Email) || string.IsNullOrEmpty(model.Token) || string.IsNullOrEmpty(model.NewPassword))
+            {
+                return BadRequest(new { message = "Yêu cầu không hợp lệ. Vui lòng kiểm tra lại thông tin nhập." });
+            }
+
+            var user = await userManager.FindByEmailAsync(model.Email);
+            if (user == null)
+            {
+                return BadRequest(new { message = "Địa chỉ email này chưa được đăng ký." });
+            }
+
+            if (!user.EmailConfirmed)
+            {
+                return BadRequest(new { message = "Vui lòng xác nhận email của bạn trước." });
+            }
+
+            try
+            {
+                var decodedTokenBytes = WebEncoders.Base64UrlDecode(model.Token);
+                var decodedToken = Encoding.UTF8.GetString(decodedTokenBytes);
+
+                var result = await userManager.ResetPasswordAsync(user, decodedToken, model.NewPassword);
+
+                if (result.Succeeded)
+                {
+                    return Ok(new { title = "Đổi mật khẩu thành công", message = "Mật khẩu của bạn đã được thay đổi." });
+                }
+
+                var errorMessages = string.Join(", ", result.Errors.Select(e => e.Description));
+                return BadRequest(new { message = "Đổi mật khẩu thất bại.", errors = errorMessages });
+            }
+            catch (FormatException)
+            {
+                return BadRequest(new { message = "Mã xác nhận không hợp lệ. Vui lòng thử lại." });
+            }
+            catch (Exception ex)
+            {
+                // Log the exception if needed
+                return StatusCode(500, new { message = "Đã xảy ra lỗi trong quá trình đổi mật khẩu. Hãy thử lại.", error = ex.Message });
+            }
+        }
+
 
         #region private helper method
         private UserDto CreateApplicationUserDto(AppUser user)
@@ -208,6 +294,23 @@ namespace API.Controllers
                         @$"<p>Cảm ơn</p> <br> {config["Email:ApplicationName"]}";
 
             var emailSend = new EmailSendDto(appUser.Email, "Xác nhận email của bạn", body);
+
+            return await emailService.SendEmailAsync(emailSend);
+        }
+
+        private async Task<bool> SendForgotUsernameOrPasswordEmail(AppUser appUser)
+        {
+            var token = await userManager.GeneratePasswordResetTokenAsync(appUser);
+            token = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(token));
+            var url = $"{config["JWT:ClientUrl"]}/{config["Email:ResetPasswordPath"]}?token={token}&email={appUser.Email}";
+
+            var body = @$"<p><b> Xin chào: {appUser.FirstName} {appUser.LastName} </b></p> 
+                        <p> Tên đăng nhập: {appUser.UserName} </p>" +
+                        $"Để đặt lại mật khẩu, hãy nhấn vào đường dẫn này." +
+                        $"<p><a href=\"{url}\"> Nhấn vào đây </a></p>" +
+                        @$"<p>Cảm ơn</p> <br> {config["Email:ApplicationName"]}";
+
+            var emailSend = new EmailSendDto(appUser.Email, "Đặt lại TÊN NGƯỜI DÙNG hoặc MẬT KHẨU", body);
 
             return await emailService.SendEmailAsync(emailSend);
         }
