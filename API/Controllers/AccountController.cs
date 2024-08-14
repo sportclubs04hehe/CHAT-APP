@@ -1,7 +1,6 @@
 ﻿using API.DTOs.Account;
 using API.Models;
 using API.Services;
-using API.Services.Impl;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -19,8 +18,9 @@ namespace API.Controllers
         UserManager<AppUser> userManager) : BaseController
     {
 
+        #region Đăng nhập
         [HttpPost("login")]
-        public async Task<ActionResult<UserDto>> Login([FromBody]LoginDto model)
+        public async Task<ActionResult<UserDto>> Login([FromBody] LoginDto model)
         {
             var user = await userManager.FindByNameAsync(model.UserName);
             if (user == null) return Unauthorized("Tên người dùng hoặc mật khẩu không đúng");
@@ -32,7 +32,9 @@ namespace API.Controllers
 
             return CreateApplicationUserDto(user);
         }
+        #endregion
 
+        #region Làm mới token
         [Authorize]
         [HttpGet("refresh-user-token")]
         public async Task<ActionResult<UserDto>> RefeshUserToken()
@@ -40,9 +42,11 @@ namespace API.Controllers
             var user = await userManager.FindByNameAsync(User.FindFirst(ClaimTypes.Email)?.Value);
             return CreateApplicationUserDto(user);
         }
-             
+        #endregion
+
+        #region Đăng ký
         [HttpPost("register")]
-        public async Task<IActionResult> Register([FromBody]RegisterDto model)
+        public async Task<IActionResult> Register([FromBody] RegisterDto model)
         {
             try
             {
@@ -63,29 +67,31 @@ namespace API.Controllers
 
                 if (!result.Succeeded)
                 {
-                    return BadRequest(new { message = "Đăng ký người dùng không thành công.", errors = result.Errors.ToString() });
+                    return BadRequest("Đăng ký người dùng không thành công.");
                 }
 
                 if (await SendConfirmEmailAsync(userToAdd))
                 {
-                    return Ok(new { title = "Tài khoản đã được tạo thành công", message = $"Chúng tôi đã gửi tin nhắn xác nhận tới email của bạn!" });
+                    return Ok(new JsonResult(new { title = "Tài khoản đã được tạo thành công", message = $"Chúng tôi đã gửi tin nhắn xác nhận tới email của bạn!" }));
                 }
                 else
                 {
-                    return StatusCode(500, new { message = "Tài khoản đã được tạo nhưng không gửi được email xác nhận. Vui lòng liên hệ với quản trị viên" });
+                    return StatusCode(500,"Tài khoản đã được tạo nhưng không gửi được email xác nhận. Vui lòng liên hệ với quản trị viên" );
                 }
 
             }
             catch (InvalidOperationException ex)
             {
-                return StatusCode(500, new { message = "Không gửi được email xác nhận. Vui lòng liên hệ với người quản trị.", error = ex.Message });
+                return StatusCode(500,"Không gửi được email xác nhận. Vui lòng liên hệ với người quản trị.");
             }
-            catch (Exception ex)
+            catch (Exception)
             {
-                return StatusCode(500, new { message = "Đã xảy ra lỗi không mong muốn. Vui lòng thử lại.", error = ex.Message });
+                return StatusCode(500,"Đã xảy ra lỗi không mong muốn. Vui lòng thử lại.");
             }
         }
+        #endregion
 
+        #region Xác nhận email
         [HttpPut("confirm-email")]
         public async Task<IActionResult> ConfirmEmail(ConfirmEmailDto emailDto)
         {
@@ -95,13 +101,13 @@ namespace API.Controllers
                 var user = await userManager.FindByEmailAsync(emailDto.Email);
                 if (user == null)
                 {
-                    return Unauthorized(new { message = "Địa chỉ email này chưa được đăng ký." });
+                    return Unauthorized("Địa chỉ email này chưa được đăng ký." );
                 }
 
                 // Check if the email is already confirmed
                 if (user.EmailConfirmed)
                 {
-                    return BadRequest(new { message = "Tài khoản email này đã được xác nhận trước đó. Vui lòng đăng nhập hoặc sử dụng email khác." });
+                    return BadRequest("Tài khoản email này đã được xác nhận trước đó. Vui lòng đăng nhập hoặc sử dụng email khác." );
                 }
 
                 // Decode the token
@@ -113,48 +119,50 @@ namespace API.Controllers
                 }
                 catch (FormatException)
                 {
-                    return BadRequest(new { message = "Mã xác nhận không hợp lệ. Vui lòng thử lại." });
+                    return BadRequest("Mã xác nhận không hợp lệ. Vui lòng thử lại.");
                 }
                 catch (Exception ex)
                 {
                     // Log the exception if needed
-                    return StatusCode(500, new { message = "Đã xảy ra lỗi khi xử lý mã xác nhận.", error = ex.Message });
+                    return StatusCode(500,"Đã xảy ra lỗi khi xử lý mã xác nhận.");
                 }
 
                 // Confirm the email
                 var result = await userManager.ConfirmEmailAsync(user, decodedToken);
                 if (result.Succeeded)
                 {
-                    return Ok(new { title = "Xác nhận email thành công", message = "Địa chỉ email đã được xác nhận. Hãy đăng nhập." });
+                    return Ok(new JsonResult(new { title = "Xác nhận email thành công", message = "Địa chỉ email đã được xác nhận. Hãy đăng nhập." }));
                 }
 
                 // Handle case where email confirmation failed
-                return BadRequest(new { message = "Mã xác nhận không hợp lệ hoặc đã hết hạn. Vui lòng thử lại." });
+                return BadRequest("Mã xác nhận không hợp lệ hoặc đã hết hạn. Vui lòng thử lại." );
             }
             catch (Exception ex)
             {
                 // Log the exception if needed
-                return StatusCode(500, new { message = "Đã xảy ra lỗi khi xác nhận email. Vui lòng thử lại sau.", error = ex.Message });
+                return StatusCode(500,"Đã xảy ra lỗi khi xác nhận email. Vui lòng thử lại sau.");
             }
         }
+        #endregion
 
+        #region Gửi lại email
         [HttpPost("resend-email-confirmation-link/{email}")]
-        public async Task<IActionResult> ResendEmailConfirmationLink([FromRoute]string email)
+        public async Task<IActionResult> ResendEmailConfirmationLink([FromRoute] string email)
         {
             if (string.IsNullOrEmpty(email))
             {
-                return BadRequest(new { message = "Email không hợp lệ." });
+                return BadRequest("Email không hợp lệ.");
             }
 
             var user = await userManager.FindByEmailAsync(email);
             if (user == null)
             {
-                return BadRequest(new { message = "Địa chỉ email này chưa được đăng ký." });
+                return BadRequest("Địa chỉ email này chưa được đăng ký." );
             }
 
             if (user.EmailConfirmed)
             {
-                return BadRequest(new { message = "Tài khoản email này đã được xác nhận trước đó. Vui lòng đăng nhập hoặc sử dụng email khác." });
+                return BadRequest("Tài khoản email này đã được xác nhận trước đó. Vui lòng đăng nhập hoặc sử dụng email khác." );
             }
 
             try
@@ -163,38 +171,40 @@ namespace API.Controllers
                 var emailSent = await SendConfirmEmailAsync(user);
                 if (emailSent)
                 {
-                    return Ok(new { title = "Xác nhận liên kết đã gửi", message = "Hãy xác nhận địa chỉ email của bạn." });
+                    return Ok(new JsonResult(new { title = "Xác nhận liên kết đã gửi", message = "Hãy xác nhận địa chỉ email của bạn." }));
                 }
                 else
                 {
                     // If email sending fails without an exception
-                    return StatusCode(500, new { message = "Gửi email thất bại. Hãy liên hệ với quản trị viên." });
+                    return StatusCode(500, "Gửi email thất bại. Hãy liên hệ với quản trị viên." );
                 }
             }
             catch (Exception ex)
             {
                 // Log the exception if needed
-                return StatusCode(500, new { message = "Đã xảy ra lỗi trong quá trình gửi email. Hãy liên hệ với quản trị viên.", error = ex.Message });
+                return StatusCode(500, "Đã xảy ra lỗi trong quá trình gửi email. Hãy liên hệ với quản trị viên.");
             }
         }
+        #endregion
 
+        #region Đặt lại mật khẩu bằng cách xác nhận email
         [HttpPost("forgot-username-or-password/{email}")]
         public async Task<IActionResult> ForgotUsernameOrPassword(string email)
         {
             if (string.IsNullOrEmpty(email))
             {
-                return BadRequest(new { message = "Email không hợp lệ." });
+                return BadRequest("Email không hợp lệ." );
             }
 
             var user = await userManager.FindByEmailAsync(email);
             if (user == null)
             {
-                return BadRequest(new { message = "Địa chỉ email này chưa được đăng ký." });
+                return BadRequest("Địa chỉ email này chưa được đăng ký." );
             }
 
             if (!user.EmailConfirmed)
             {
-                return BadRequest(new { message = "Vui lòng xác nhận email của bạn trước." });
+                return BadRequest("Vui lòng xác nhận email của bạn trước." );
             }
 
             try
@@ -203,38 +213,40 @@ namespace API.Controllers
                 var emailSent = await SendForgotUsernameOrPasswordEmail(user);
                 if (emailSent)
                 {
-                    return Ok(new { title = "Tên người dùng và mật khẩu đã được gửi", message = "Hãy kiểm tra email của bạn." });
+                    return Ok(new JsonResult(new { title = "Tên người dùng và mật khẩu đã được gửi", message = "Hãy kiểm tra email của bạn." }));
                 }
                 else
                 {
                     // If email sending fails without an exception
-                    return StatusCode(500, new { message = "Gửi email thất bại. Hãy liên hệ với quản trị viên." });
+                    return StatusCode(500,"Gửi email thất bại. Hãy liên hệ với quản trị viên." );
                 }
             }
             catch (Exception ex)
             {
                 // Log the exception if needed
-                return StatusCode(500, new { message = "Đã xảy ra lỗi trong quá trình gửi email. Hãy liên hệ với quản trị viên.", error = ex.Message });
+                return StatusCode(500, "Đã xảy ra lỗi trong quá trình gửi email. Hãy liên hệ với quản trị viên.");
             }
         }
+        #endregion
 
+        #region Đặt lại mật khẩu
         [HttpPut("reset-password")]
         public async Task<IActionResult> ResetPassword(ResetPasswordDto model)
         {
             if (model == null || string.IsNullOrEmpty(model.Email) || string.IsNullOrEmpty(model.Token) || string.IsNullOrEmpty(model.NewPassword))
             {
-                return BadRequest(new { message = "Yêu cầu không hợp lệ. Vui lòng kiểm tra lại thông tin nhập." });
+                return BadRequest("Yêu cầu không hợp lệ. Vui lòng kiểm tra lại thông tin nhập." );
             }
 
             var user = await userManager.FindByEmailAsync(model.Email);
             if (user == null)
             {
-                return BadRequest(new { message = "Địa chỉ email này chưa được đăng ký." });
+                return BadRequest( "Địa chỉ email này chưa được đăng ký." );
             }
 
             if (!user.EmailConfirmed)
             {
-                return BadRequest(new { message = "Vui lòng xác nhận email của bạn trước." });
+                return BadRequest("Vui lòng xác nhận email của bạn trước." );
             }
 
             try
@@ -246,7 +258,7 @@ namespace API.Controllers
 
                 if (result.Succeeded)
                 {
-                    return Ok(new { title = "Đổi mật khẩu thành công", message = "Mật khẩu của bạn đã được thay đổi." });
+                    return Ok(new JsonResult(new { title = "Đổi mật khẩu thành công", message = "Mật khẩu của bạn đã được thay đổi." }));
                 }
 
                 var errorMessages = string.Join(", ", result.Errors.Select(e => e.Description));
@@ -254,15 +266,15 @@ namespace API.Controllers
             }
             catch (FormatException)
             {
-                return BadRequest(new { message = "Mã xác nhận không hợp lệ. Vui lòng thử lại." });
+                return BadRequest("Mã xác nhận không hợp lệ. Vui lòng thử lại." );
             }
             catch (Exception ex)
             {
                 // Log the exception if needed
-                return StatusCode(500, new { message = "Đã xảy ra lỗi trong quá trình đổi mật khẩu. Hãy thử lại.", error = ex.Message });
+                return StatusCode(500, "Đã xảy ra lỗi trong quá trình đổi mật khẩu. Hãy thử lại.");
             }
         }
-
+        #endregion
 
         #region private helper method
         private UserDto CreateApplicationUserDto(AppUser user)
