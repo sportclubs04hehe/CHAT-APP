@@ -213,7 +213,7 @@ namespace API.Controllers
                 var emailSent = await SendForgotUsernameOrPasswordEmail(user);
                 if (emailSent)
                 {
-                    return Ok(new JsonResult(new { title = "Tên người dùng và mật khẩu đã được gửi", message = "Hãy kiểm tra email của bạn." }));
+                    return Ok(new JsonResult(new { title = "Xác nhận Email", message = "Chúng tôi đã gửi đường dẫn đổi mật khẩu đến Email của bạn, hãy kiểm tra." }));
                 }
                 else
                 {
