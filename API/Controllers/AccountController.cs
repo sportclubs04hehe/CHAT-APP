@@ -59,6 +59,10 @@ namespace API.Controllers
                 {
                     FirstName = model.FirstName.ToLower(),
                     LastName = model.LastName.ToLower(),
+                    KnowAs = model.KnowAs.ToLower(),
+                    Gender = model.Gender.ToLower(),
+                    City = model.City.ToLower(),
+                    Country = model.Country.ToLower(),
                     UserName = model.Email.ToLower(),
                     Email = model.Email.ToLower(),
                 };
@@ -80,7 +84,7 @@ namespace API.Controllers
                 }
 
             }
-            catch (InvalidOperationException ex)
+            catch (InvalidOperationException)
             {
                 return StatusCode(500,"Không gửi được email xác nhận. Vui lòng liên hệ với người quản trị.");
             }
