@@ -8,7 +8,7 @@ namespace API.Models
         public required string FirstName { get; set; }
         public required string LastName { get; set; }
         public DateTime DateCreated { get; set; } = DateTime.Now;
-        public DateTime LastActive { get; set; }
+        public DateTime LastActive { get; set; } = DateTime.Now;
         public DateOnly DateOfBirth { get; set; }
         public required string KnowAs { get; set; }
         public required string Gender { get; set; }
@@ -19,9 +19,10 @@ namespace API.Models
         public required string Country { get; set; }
         public List<Photo> Photos { get; set; } = [];
 
-        public int GetAge()
-        {
-            return DateOfBirth.CalcuateAge();
-        }
+        //public int GetAge()
+        //{
+        //    return DateOfBirth.CalcuateAge();
+        //}
+
     }
 }

@@ -3,6 +3,8 @@ using API.Services.Impl;
 using API.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using API.Repository;
+using API.Repository.Impl;
 
 namespace API.Extensions
 {
@@ -21,6 +23,14 @@ namespace API.Extensions
 
             services.AddScoped<IJwtService, JWTService>();
             services.AddScoped<IEmailService, EmailService>();
+
+            #region Repository
+            services.AddScoped<IUserRepository, UserRepository>();
+            #endregion
+
+            #region AutoMapper
+            services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
+            #endregion 
 
             services.AddCors();
 
