@@ -285,8 +285,8 @@ namespace API.Controllers
         {
             return new UserDto
             {
+                UserName = user.UserName,
                 FirstName = user.FirstName,
-                LastName = user.LastName,
                 JWT = jwtService.CreateJWT(user),
             };
         }
