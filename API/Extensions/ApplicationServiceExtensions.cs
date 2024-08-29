@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using API.Repository;
 using API.Repository.Impl;
+using API.Helpers;
 
 namespace API.Extensions
 {
@@ -23,6 +24,7 @@ namespace API.Extensions
 
             services.AddScoped<IJwtService, JWTService>();
             services.AddScoped<IEmailService, EmailService>();
+            services.AddScoped<IPhotoService, PhotoService>();
 
             #region Repository
             services.AddScoped<IUserRepository, UserRepository>();
@@ -30,7 +32,12 @@ namespace API.Extensions
 
             #region AutoMapper
             services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
-            #endregion 
+            #endregion
+
+            #region Clouldinary configure
+            services.Configure<CloudinarySettings>(config.GetSection("CloudinarySettings"));
+
+            #endregion
 
             services.AddCors();
 

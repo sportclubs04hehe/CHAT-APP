@@ -22,16 +22,33 @@ namespace API.Controllers
         [HttpPost("login")]
         public async Task<ActionResult<UserDto>> Login([FromBody] LoginDto model)
         {
-            var user = await userManager.FindByNameAsync(model.UserName);
-            if (user == null) return Unauthorized("Tên người dùng hoặc mật khẩu không đúng");
+            try
+            {
+                var user = await userManager.FindByNameAsync(model.UserName);
+                if (user == null)
+                {
+                    return Unauthorized("Tên người dùng hoặc mật khẩu không đúng");
+                }
 
-            if (user.EmailConfirmed == false) return Unauthorized("Vui lòng xác nhận email");
+                if (!user.EmailConfirmed)
+                {
+                    return Unauthorized("Vui lòng xác nhận email");
+                }
 
-            var result = await signInManager.CheckPasswordSignInAsync(user, model.Password, false);
-            if (!result.Succeeded) return Unauthorized("Tên người dùng hoặc mật khẩu không đúng");
+                var result = await signInManager.CheckPasswordSignInAsync(user, model.Password, false);
+                if (!result.Succeeded)
+                {
+                    return Unauthorized("Tên người dùng hoặc mật khẩu không đúng");
+                }
 
-            return CreateApplicationUserDto(user);
+                return CreateApplicationUserDto(user);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, ex.InnerException?.Message ?? ex.Message);
+            }
         }
+
         #endregion
 
         #region Làm mới token
