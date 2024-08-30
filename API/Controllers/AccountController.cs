@@ -1,4 +1,5 @@
-﻿using API.DTOs.Account;
+﻿using API.Data;
+using API.DTOs.Account;
 using API.Models;
 using API.Services;
 using Microsoft.AspNetCore.Authorization;
@@ -24,7 +25,9 @@ namespace API.Controllers
         {
             try
             {
-                var user = await userManager.FindByNameAsync(model.UserName);
+                var user = await userManager.Users.Include(p => p.Photos)
+                    .FirstOrDefaultAsync(u => u.UserName == model.UserName.ToLower());
+
                 if (user == null)
                 {
                     return Unauthorized("Tên người dùng hoặc mật khẩu không đúng");
@@ -36,6 +39,7 @@ namespace API.Controllers
                 }
 
                 var result = await signInManager.CheckPasswordSignInAsync(user, model.Password, false);
+
                 if (!result.Succeeded)
                 {
                     return Unauthorized("Tên người dùng hoặc mật khẩu không đúng");
@@ -305,6 +309,7 @@ namespace API.Controllers
                 UserName = user.UserName,
                 FirstName = user.FirstName,
                 JWT = jwtService.CreateJWT(user),
+                PhotoUrl = user.Photos.FirstOrDefault(p => p.IsMain)?.Url,
             };
         }
 
