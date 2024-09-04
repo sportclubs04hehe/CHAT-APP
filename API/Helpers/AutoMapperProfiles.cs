@@ -1,4 +1,5 @@
-﻿using API.DTOs.User;
+﻿using API.DTOs.Account;
+using API.DTOs.User;
 using API.Extensions;
 using API.Models;
 using AutoMapper;
@@ -16,6 +17,8 @@ namespace API.Helpers
                 o => o.MapFrom(m => m.Photos.FirstOrDefault(i => i.IsMain)!.Url)); 
             CreateMap<Photo, PhotoDto>();
             CreateMap<MemberUpdateDto, AppUser>();
+            CreateMap<RegisterDto, AppUser>();
+            CreateMap<string, DateOnly>().ConvertUsing(s => DateOnly.Parse(s));
         }
     }
 }

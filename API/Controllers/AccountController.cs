@@ -1,7 +1,7 @@
-﻿using API.Data;
-using API.DTOs.Account;
+﻿using API.DTOs.Account;
 using API.Models;
 using API.Services;
+using AutoMapper;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -16,7 +16,8 @@ namespace API.Controllers
         SignInManager<AppUser> signInManager,
         IEmailService emailService,
         IConfiguration config,
-        UserManager<AppUser> userManager) : BaseController
+        UserManager<AppUser> userManager,
+        IMapper mapper) : BaseController
     {
 
         #region Đăng nhập
@@ -76,17 +77,8 @@ namespace API.Controllers
                     return BadRequest($"Địa chỉ email {model.Email} đã tồn tại. Hãy chọn một tài khoản email khác");
                 }
 
-                var userToAdd = new AppUser
-                {
-                    FirstName = model.FirstName.ToLower(),
-                    LastName = model.LastName.ToLower(),
-                    KnowAs = model.KnowAs.ToLower(),
-                    Gender = model.Gender.ToLower(),
-                    City = model.City.ToLower(),
-                    Country = model.Country.ToLower(),
-                    UserName = model.Email.ToLower(),
-                    Email = model.Email.ToLower(),
-                };
+                var userToAdd = mapper.Map<AppUser>(model);
+                userToAdd.UserName = model.Email.ToLower();
 
                 var result = await userManager.CreateAsync(userToAdd, model.Password);
 
@@ -109,7 +101,7 @@ namespace API.Controllers
             {
                 return StatusCode(500,"Không gửi được email xác nhận. Vui lòng liên hệ với người quản trị.");
             }
-            catch (Exception)
+            catch (Exception ex)
             {
                 return StatusCode(500,"Đã xảy ra lỗi không mong muốn. Vui lòng thử lại.");
             }
@@ -309,6 +301,7 @@ namespace API.Controllers
                 UserName = user.UserName,
                 FirstName = user.FirstName,
                 JWT = jwtService.CreateJWT(user),
+                Gender = user.Gender,
                 PhotoUrl = user.Photos.FirstOrDefault(p => p.IsMain)?.Url,
             };
         }

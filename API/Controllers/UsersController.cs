@@ -1,5 +1,6 @@
 ﻿using API.DTOs.User;
 using API.Extensions;
+using API.Helpers;
 using API.Models;
 using API.Repository;
 using API.Services;
@@ -18,11 +19,22 @@ namespace API.Controllers
     {
         // Get All Users
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<MemberDto>>> GetUsers()
+        public async Task<ActionResult<IEnumerable<MemberDto>>> GetUsers([FromQuery]UserParams userParams)
         {
-            var users = await userRepository.GetAllMemberAsync();
+            try
+            {
+                userParams.CurrentUsername = User.GetUsername();
 
-            return Ok(users);
+                var users = await userRepository.GetAllMemberAsync(userParams);
+
+                Response.AddPaginationHeader(users);
+
+                return Ok(users);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, ex.InnerException?.Message ?? ex.Message);
+            }
         }
 
         [HttpGet("get-by-id/{id}")]
@@ -142,35 +154,37 @@ namespace API.Controllers
             }
         }
 
-        //[HttpDelete("delete-photo/{photoId:guid}")]
-        //public async Task<ActionResult> DeletePhoto(Guid photoId)
-        //{
-        //    try
-        //    {
-        //        var user = await userRepository.GetUserByUsernameAsync(User.GetUsername());
+        [HttpDelete("delete-photo/{photoId:guid}")]
+        public async Task<ActionResult> DeletePhoto(Guid photoId)
+        {
+            try
+            {
+                var user = await userRepository.GetUserByUsernameAsync(User.GetUsername());
 
-        //        if (user == null) return BadRequest("User not found");
+                if (user == null) return BadRequest("User not found");
 
-        //        var photo = await photoRepository.GetPhotoById(photoId);
+                var photo = user.Photos.FirstOrDefault(user => user.Id == photoId);
 
-        //        if (photo == null || photo.IsMain) return BadRequest("This photo cannot be deleted");
+                if (photo == null || photo.IsMain) return BadRequest("This photo cannot be deleted");
 
-        //        if (photo.PublicId != null)
-        //        {
-        //            var result = await photoService.DeletePhotoAsync(photo.PublicId);
-        //            if (result.Error != null) return BadRequest(result.Error.Message);
-        //        }
+                if (photo.PublicId != null)
+                {
+                    var result = await photoService.DeletePhotoAsync(photo.PublicId);
+                    if (result.Error != null) return BadRequest(result.Error.Message);
+                }
 
-        //        user.Photos.Remove(photo);
+                user.Photos.Remove(photo);
 
-        //        if (await unitOfWork.Complete()) return Ok();
+                var updateResult = await userManager.UpdateAsync(user);
 
-        //        return BadRequest("Có vấn đề xảy ra khi xóa ảnh");
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        return StatusCode(500, ex.InnerException?.Message ?? ex.Message);
-        //    }
-        //}
+                if (updateResult.Succeeded) return Ok();
+
+                return BadRequest("Có vấn đề xảy ra khi xóa ảnh");
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, ex.InnerException?.Message ?? ex.Message);
+            }
+        }
     }
 }
