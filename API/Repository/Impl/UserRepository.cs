@@ -8,8 +8,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace API.Repository.Impl
 {
-    public class 
-        (Context context,
+    public class UserRepository(Context context,
         IMapper mapper) : IUserRepository
     {
         public async Task<PagedList<MemberDto>> GetAllMemberAsync(UserParams userParams)
