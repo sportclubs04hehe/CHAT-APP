@@ -62,6 +62,7 @@ namespace API.Controllers
         public async Task<ActionResult<UserDto>> RefeshUserToken()
         {
             var user = await userManager.FindByNameAsync(User.FindFirst(ClaimTypes.Email)?.Value);
+            
             return CreateApplicationUserDto(user);
         }
         #endregion

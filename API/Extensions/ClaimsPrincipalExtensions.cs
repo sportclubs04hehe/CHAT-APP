@@ -11,5 +11,13 @@ namespace API.Extensions
 
             return username;
         }
+
+        public static string GetUserId(this ClaimsPrincipal user)
+        {
+            var userId = user.FindFirst(ClaimTypes.NameIdentifier)?.Value
+                ?? throw new Exception("Không thể lấy được userId(id) từ token");
+
+            return userId;
+        }
     }
 }

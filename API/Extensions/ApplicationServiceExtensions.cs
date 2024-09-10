@@ -30,6 +30,10 @@ namespace API.Extensions
             services.AddScoped<IUserRepository, UserRepository>();
             #endregion
 
+            #region LogUserActivity
+            services.AddScoped<LogUserActivity>();
+            #endregion
+
             #region AutoMapper
             services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
             #endregion
