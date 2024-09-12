@@ -18,11 +18,7 @@ namespace API.Models
         public string? City { get; set; }
         public string? Country { get; set; }
         public List<Photo> Photos { get; set; } = [];
-
-        //public int GetAge()
-        //{
-        //    return DateOfBirth.CalcuateAge();
-        //}
-
+        public List<UserLike> LikedByUsers { get; set; } = []; // ai thích người dùng này?
+        public List<UserLike> LikedUsers { get; set; } = []; // người dùng now thích ai?
     }
 }
