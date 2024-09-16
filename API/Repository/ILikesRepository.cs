@@ -18,5 +18,7 @@ namespace API.Repository
         void AddLike(UserLike like);
         /// Lưu các thay đổi vào cơ sở dữ liệu
         Task<bool> SaveChange();
+        Task<int> GetLikedCountAsync(string userId);
+        Task<int> GetLikedByCountAsync(string userId);
     }
 }

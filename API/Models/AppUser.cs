@@ -20,5 +20,8 @@ namespace API.Models
         public List<Photo> Photos { get; set; } = [];
         public List<UserLike> LikedByUsers { get; set; } = []; // ai thích người dùng này?
         public List<UserLike> LikedUsers { get; set; } = []; // người dùng now thích ai?
+        public List<Messages> MessagesSent { get; set; } = []; // Tin nhắn đã gửi
+        public List<Messages> MessagesReceived { get; set; } = []; // Tin nhắn đã nhận
+
     }
 }

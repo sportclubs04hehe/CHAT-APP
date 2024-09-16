@@ -29,6 +29,7 @@ namespace API.Extensions
             #region Repository
             services.AddScoped<IUserRepository, UserRepository>();
             services.AddScoped<ILikesRepository, LikesRepository>();
+            services.AddScoped<IMessageRepository, MessageRepository>();
             #endregion
 
             #region LogUserActivity

@@ -61,5 +61,19 @@ namespace API.Controllers
 
             return Ok(users);
         }
+
+        [HttpGet("liked-count/{userId}")]
+        public async Task<ActionResult<int>> GetLikedCount(string userId)
+        {
+            var count = await likesRepository.GetLikedCountAsync(userId);
+            return Ok(count);
+        }
+
+        [HttpGet("liked-by-count/{userId}")]
+        public async Task<ActionResult<int>> GetLikedByCount(string userId)
+        {
+            var count = await likesRepository.GetLikedByCountAsync(userId);
+            return Ok(count);
+        }
     }
 }

@@ -84,12 +84,26 @@ namespace API.Repository.Impl
                     // Lấy các đối tượng người dùng từ danh sách ID đã kết hợp
                     query = context.Users
                         .Where(u => combinedUserIds.Contains(u.Id))
-                        .OrderBy(u => u.Id) 
+                        .OrderBy(u => u.Id)
                         .ProjectTo<MemberDto>(mapper.ConfigurationProvider);
                     break;
             }
 
             return await PagedList<MemberDto>.CreateAsync(query, likesParams.PageNumber, likesParams.PageSize);
+        }
+
+        public async Task<int> GetLikedCountAsync(string userId)
+        {
+            return await context.Likes
+                .Where(ul => ul.SourceUserId == userId)
+                .CountAsync();
+        }
+
+        public async Task<int> GetLikedByCountAsync(string userId)
+        {
+            return await context.Likes
+                .Where(ul => ul.TargetUserId == userId)
+                .CountAsync();
         }
 
         public async Task<bool> SaveChange()

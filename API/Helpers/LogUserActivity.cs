@@ -3,6 +3,7 @@ using API.Models;
 using API.Repository;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc.Filters;
+using System.Security.Claims;
 
 namespace API.Helpers
 {
@@ -16,27 +17,60 @@ namespace API.Helpers
     {
         public async Task OnActionExecutionAsync(ActionExecutingContext context, ActionExecutionDelegate next)
         {
-            // Thực thi logic trước khi hành động trong controller được gọi
-            //-----------------------------------------------------//
-            // Thực thi hành động trong controller
+            var logger = context.HttpContext.RequestServices.GetRequiredService<ILogger<LogUserActivity>>(); // lấy logger
+
+            // Chạy middleware tiếp theo trong pipeline
             var resultContext = await next();
 
-            // Kiểm tra xem người dùng có được xác thực hay không
-            if (resultContext.HttpContext.User.Identity?.IsAuthenticated != true) return;
+            // Log thông tin xác thực
+            if (resultContext.HttpContext.User.Identity == null)
+            {
+                logger.LogInformation("User.Identity is null.");
+                return;
+            }
 
-            // Lấy userId từ ClaimsPrincipal
-            var userId = resultContext.HttpContext.User.GetUserId();
+            logger.LogInformation("IsAuthenticated: {IsAuthenticated}", resultContext.HttpContext.User.Identity.IsAuthenticated);
 
-            // Lấy IUnitOfWork từ dịch vụ yêu cầu
-            var uow = resultContext.HttpContext.RequestServices.GetRequiredService<UserManager<AppUser>>();
+            // Nếu người dùng chưa xác thực thì return
+            if (resultContext.HttpContext.User.Identity?.IsAuthenticated != true)
+            {
+                logger.LogInformation("User is not authenticated.");
+                return;
+            }
 
-            var user = await uow.FindByNameAsync(userId);
+            // Lấy userId từ claims
+            var userId = resultContext.HttpContext.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            logger.LogInformation("User ID: {UserId}", userId);
 
-            if (user == null) return;
+            if (userId == null)
+            {
+                logger.LogWarning("User ID claim is missing.");
+                return;
+            }
 
+            // Lấy UserManager từ DI container
+            var userManager = resultContext.HttpContext.RequestServices.GetRequiredService<UserManager<AppUser>>();
+            var user = await userManager.FindByIdAsync(userId); // sử dụng FindByIdAsync thay vì FindByNameAsync
+
+            if (user == null)
+            {
+                logger.LogWarning("User not found for ID: {UserId}", userId);
+                return;
+            }
+
+            // Cập nhật last active
             user.LastActive = DateTime.Now;
+            var result = await userManager.UpdateAsync(user);
 
-            await uow.UpdateAsync(user);
+            // Log kết quả của việc cập nhật
+            if (result.Succeeded)
+            {
+                logger.LogInformation("User {UserId} last active time updated successfully.", userId);
+            }
+            else
+            {
+                logger.LogError("Failed to update last active time for User {UserId}.", userId);
+            }
         }
     }
 }
