@@ -46,7 +46,7 @@ namespace API.Controllers
                     return Unauthorized("Tên người dùng hoặc mật khẩu không đúng");
                 }
 
-                return CreateApplicationUserDto(user);
+                return await CreateApplicationUserDto(user);
             }
             catch (Exception ex)
             {
@@ -63,7 +63,7 @@ namespace API.Controllers
         {
             var user = await userManager.FindByNameAsync(User.FindFirst(ClaimTypes.Email)?.Value);
             
-            return CreateApplicationUserDto(user);
+            return await CreateApplicationUserDto(user);
         }
         #endregion
 
@@ -295,13 +295,13 @@ namespace API.Controllers
         #endregion
 
         #region private helper method
-        private UserDto CreateApplicationUserDto(AppUser user)
+        private async Task<UserDto> CreateApplicationUserDto(AppUser user)
         {
             return new UserDto
             {
                 UserName = user.UserName,
                 FirstName = user.FirstName,
-                JWT = jwtService.CreateJWT(user),
+                JWT = await jwtService.CreateJWT(user),
                 Gender = user.Gender,
                 PhotoUrl = user.Photos.FirstOrDefault(p => p.IsMain)?.Url,
             };

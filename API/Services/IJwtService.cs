@@ -4,6 +4,6 @@ namespace API.Services
 {
     public interface IJwtService
     {
-        string CreateJWT(AppUser user);
+        Task<string> CreateJWT(AppUser user);
     }
 }

@@ -39,7 +39,8 @@ namespace API
             try
             {
                 var userManager = services.GetRequiredService<UserManager<AppUser>>();
-                await Seed.SeedUsers(userManager);
+                var roleManager = services.GetRequiredService<RoleManager<IdentityRole>>();
+                await Seed.SeedUsers(userManager, roleManager);
             }
             catch(Exception ex)
             {
