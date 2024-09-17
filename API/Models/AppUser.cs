@@ -1,5 +1,4 @@
-﻿using API.Extensions;
-using Microsoft.AspNetCore.Identity;
+﻿using Microsoft.AspNetCore.Identity;
 
 namespace API.Models
 {
@@ -22,6 +21,5 @@ namespace API.Models
         public List<UserLike> LikedUsers { get; set; } = []; // người dùng now thích ai?
         public List<Messages> MessagesSent { get; set; } = []; // Tin nhắn đã gửi
         public List<Messages> MessagesReceived { get; set; } = []; // Tin nhắn đã nhận
-
     }
 }
