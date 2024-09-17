@@ -50,6 +50,10 @@ namespace API.Extensions
                     };
                 });
 
+            services.AddAuthorizationBuilder()
+                .AddPolicy("RequiredAdminRole", policy => policy.RequireRole("ADMIN"))
+                .AddPolicy("ModeratePhotoRole", policy => policy.RequireRole("ADMIN", "MODERATOR"));
+
             return services;
         }
     }

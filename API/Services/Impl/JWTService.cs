@@ -1,4 +1,5 @@
 ﻿using API.Models;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
@@ -10,13 +11,15 @@ namespace API.Services.Impl
     {
         private readonly SymmetricSecurityKey _jwtKey;
         private readonly IConfiguration _config;
-        public JWTService(IConfiguration config)
+        private readonly UserManager<AppUser> _userManager;
+        public JWTService(IConfiguration config, UserManager<AppUser> userManager)
         {
             _config = config;
+            _userManager = userManager;
             _jwtKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_config["JWT:Key"]));
         }
 
-        public string CreateJWT(AppUser user)
+        public async Task<string> CreateJWT(AppUser user)
         {
             var userClaims = new List<Claim>
             {
@@ -27,6 +30,10 @@ namespace API.Services.Impl
                 new Claim(ClaimTypes.Surname, user.LastName),
                 new Claim("Đây là tên claim của tôi", "đây là giá trị của nó"),
             };
+
+            var roles = await _userManager.GetRolesAsync(user);
+
+            userClaims.AddRange(roles.Select(role => new Claim(ClaimTypes.Role, role)));
 
             var creadentials = new SigningCredentials(_jwtKey, SecurityAlgorithms.HmacSha512Signature);
             var tokenDescriptor = new SecurityTokenDescriptor
