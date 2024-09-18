@@ -18,7 +18,6 @@ namespace API.Controllers
         IPhotoService photoService) : BaseController
     {
         // Get All Users
-        [Authorize(Roles = "ADMIN")]
         [HttpGet]
         public async Task<ActionResult<IEnumerable<MemberDto>>> GetUsers([FromQuery]UserParams userParams)
         {
@@ -48,7 +47,6 @@ namespace API.Controllers
             return Ok(user);
         }
 
-        [Authorize(Roles = "MEMBER")]
         [HttpGet("get-by-username/{username}")]
         public async Task<ActionResult<MemberDto>> GetUserByUserName([FromRoute] string username)
         {
