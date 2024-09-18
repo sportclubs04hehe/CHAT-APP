@@ -45,6 +45,10 @@ namespace API.Extensions
 
             #endregion
 
+            #region SignalR
+            services.AddSignalR();
+            #endregion
+
             services.AddCors();
 
             // config error

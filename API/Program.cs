@@ -2,6 +2,7 @@ using API.Data;
 using API.Extensions;
 using API.Middleware;
 using API.Models;
+using API.SignalR;
 using Microsoft.AspNetCore.Identity;
 
 namespace API
@@ -32,6 +33,8 @@ namespace API
             app.UseAuthorization();
 
             app.MapControllers();
+
+            app.MapHub<PresenceHub>("hubs/presence");
 
             using var scope = app.Services.CreateScope();
             var services = scope.ServiceProvider;
